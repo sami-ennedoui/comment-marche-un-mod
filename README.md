@@ -1,6 +1,6 @@
 # Comment marche un mod
 
-Je voulais jouer une carrière qui part de rien, dans un petit club nordique. Le jeu de foot auquel je joue n'a pas ces divisions, alors j'ai regardé ce qu'il faudrait changer pour les ajouter. Cette question m'a surtout appris comment un jeu est construit.
+Je voulais jouer une carrière qui part de rien, dans un petit club nordique. FC 27 n'a pas ces divisions, alors j'ai regardé ce qu'il faudrait changer pour les ajouter. Cette question m'a surtout appris comment un jeu est construit.
 
 Ce dépôt résume ce que j'ai compris. Il ne contient ni le mod, ni fichier du jeu, ni code.
 
