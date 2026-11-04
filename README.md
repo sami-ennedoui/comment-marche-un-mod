@@ -2,7 +2,7 @@
 
 Je voulais jouer une carrière qui part de rien, dans un petit club nordique. FC 27 n'a pas ces divisions, alors j'ai regardé ce qu'il faudrait changer pour les ajouter. Cette question m'a surtout appris comment un jeu est construit.
 
-Ce dépôt résume ce que j'ai compris. Il ne contient ni le mod, ni fichier du jeu, ni code.
+Ce dépôt résume ce que j'ai compris, pour le stream Toulouse IA du 5 novembre 2026. Il ne contient ni le mod, ni fichier du jeu, ni code.
 
 ![Une tribune générée par un script à partir de la carte du quartier](images/tribune.jpg)
 
@@ -20,47 +20,56 @@ Le moteur fait tourner le jeu, mais presque tout ce qu'on voit à l'écran vient
 
 ## Le chemin d'un mod
 
-1. **Ouvrir.** Les fichiers d'un jeu sont rangés dans de grosses archives. Des outils écrits par des passionnés savent les ouvrir et sortir leur contenu dans des formats courants : du WAV pour le son, du FBX pour la 3D, du XML pour la logique.
+1. **Ouvrir.** Les fichiers d'un jeu sont rangés dans de grosses archives. Des outils écrits par des passionnés, comme FIFA Editor Tool pour FC 27, savent les ouvrir et sortir leur contenu dans des formats courants.
 2. **Lire.** Avant de changer quoi que ce soit, on regarde comment le jeu se sert de ces fichiers. C'est souvent là qu'on comprend pourquoi quelque chose nous agaçait.
 3. **Prouver qu'on ne casse rien.** On relit un fichier, on le réécrit sans rien changer et on compare. Si les deux versions diffèrent, on ne comprend pas encore le format.
 4. **Modifier.** On travaille ensuite avec des outils ordinaires : Blender pour la 3D, un script pour les tables, un modèle de synthèse vocale pour les voix.
-5. **Réimporter.** L'outil produit un petit fichier qui contient seulement ce qui change. Mon fichier de test pèse 173 Ko, pour un jeu de 72 Go. En général, un chargeur applique ce fichier au lancement et les fichiers d'origine restent en place.
+5. **Réimporter.** L'outil produit un petit fichier qui contient seulement ce qui change. En général, un chargeur applique ce fichier au lancement et les fichiers d'origine restent en place.
 6. **Tester dans le jeu.** L'éditeur peut accepter un fichier que le jeu refusera ensuite. Seul le jeu peut dire si ça marche.
 
-## Exemple : le speaker anglais des petits stades
+## Le pipeline
 
-Dans beaucoup de petits stades, le speaker parle anglais et ne nomme jamais le club. Les fichiers expliquent pourquoi.
+Je ne vais pas saisir des milliers de joueurs à la main, donc un programme doit construire le mod à partir de données. On doit aussi pouvoir le relancer à tout moment. Voici le plan, et la dernière section dit ce qui existe vraiment.
 
-Le jeu essaie d'abord une phrase qui nomme l'équipe. S'il n'en trouve pas, il prend une phrase générique, du type "Goal for the hosts!". Une table relie chaque enregistrement à l'identifiant d'un club. Pour les buts en anglais, elle couvre 20 des 24 clubs de la quatrième division anglaise, et aucun club des premières divisions danoise, suédoise et norvégienne.
+1. **Décrire les ligues.** Un fichier de configuration décrit les divisions à ajouter et leurs clubs.
+2. **Récupérer les joueurs.** Les joueurs viennent de la base d'un jeu de gestion de football, beaucoup plus complète sur les petites divisions. Ceux qui existent déjà dans FC 27 ne sont pas ajoutés une deuxième fois.
+3. **Convertir les notes.** Les deux jeux ne notent pas les joueurs de la même façon. Un modèle apprend la correspondance sur les joueurs présents dans les deux, puis il l'applique aux autres. On mesure son erreur sur des joueurs qu'il n'a pas vus, et chaque division doit rester nettement en dessous de celle du dessus.
+4. **Habiller les clubs.** Un script interroge l'API de Wikipedia. Il part de la page de la saison de chaque ligue, suit les liens vers les clubs, puis lit dans le code de chaque page les couleurs et les motifs du maillot. Il a déjà récupéré 66 clubs. Ces pages peuvent dater, et rien n'a encore été appliqué à un maillot du jeu.
+5. **Écrire les compétitions.** Le programme génère les ligues et une petite coupe nordique. Il ne touche pas aux ligues existantes, sauf pour les relier aux nouvelles par les montées et les descentes.
+6. **Assembler et tester.** Tout finit dans un seul mod, et on vérifie qu'une carrière tient sur plusieurs saisons.
 
-La langue suit une logique proche. Les pays nordiques ont un code de langue, mais aucune banque de voix ne lui correspond, ce qui explique probablement l'anglais.
+## Les deux bonus
 
-La bonne nouvelle, c'est que ces mécanismes existent déjà. L'éditeur a accepté des phrases de but en danois, générées avec Piper, un modèle de synthèse vocale open source. La phrase vérifiée ressort de l'éditeur presque identique, avec une corrélation de 0,9998. Personne ne l'a encore entendue dans le jeu.
+Ces deux idées ne bloquent rien, car le mod peut exister sans elles.
 
-## Exemple : pourquoi les stades se ressemblent
+### Des stades qui ne se ressemblent plus
 
-La base du jeu relie jusqu'à 61 clubs au même stade générique. Un petit stade est donc un décor partagé, et il est fait de pièces : tribunes, portes, toit, mâts. Les 27 pièces exportées d'un de ces stades totalisent environ 61 000 triangles. Elles sont en mètres, à l'échelle réelle, et centrées sur le terrain.
+Les petits clubs jouent dans des décors génériques que beaucoup d'autres clubs partagent. L'idée est de générer un stade pour un club à partir de la carte réelle.
 
-Une tribune rehaussée de 50 % dans Blender est entrée dans l'éditeur et en est ressortie avec sa nouvelle forme. Il reste à savoir si le public, l'éclairage précalculé et les collisions suivent.
-
-Pour créer un stade sans le modéliser à la main, un script part d'OpenStreetMap. Il lit l'emprise des tribunes et des bâtiments, les routes et les arbres, puis il construit le tout dans Blender en moins d'une minute.
+Un script interroge Overpass, l'API d'OpenStreetMap, et récupère les bâtiments, les routes, les arbres, les tribunes et les mâts autour du stade. Il convertit les coordonnées en mètres autour du rond central, dessine les textures, puis construit le tout dans Blender en moins d'une minute. Changer de stade revient à changer quelques identifiants.
 
 ![Le stade et son quartier, construits à partir de la carte](images/quartier.jpg)
 
-La carte donne les positions. Le script estime les hauteurs, les gradins et les toits, donc le résultat est plausible et faux dans le détail. Cette méthode dépend aussi de la carte : sur six stades danois essayés, trois étaient assez bien dessinés. Ce modèle n'existe que dans Blender, et il n'a jamais été chargé dans le jeu.
+La carte donne les positions. Le script estime les hauteurs, les gradins et les toits, donc le résultat est plausible et faux dans le détail. Cette méthode dépend aussi de la carte : sur six stades danois essayés, trois étaient assez bien dessinés. Ce modèle n'existe que dans Blender. Il n'a jamais été chargé dans le jeu, et ce passage reste à prouver.
+
+### Des voix nordiques
+
+Dans les petits stades, le speaker parle anglais et ne nomme pas le club. Seuls certains clubs ont des annonces à leur nom, et les autres reçoivent une phrase générique.
+
+L'idée est de générer des annonces en danois, en suédois, en norvégien et en finnois avec une synthèse vocale open source, puis de les faire jouer à la place de la voix anglaise. Ces annonces pourraient aussi nommer le club. Personne ne les a encore entendues dans le jeu.
 
 ## Le rôle de l'IA
 
-Claude Code a écrit presque tout le code et mené les essais décrits ici. Il va vite, et il annonce ses erreurs sur le même ton que ses réussites. Il m'a par exemple assuré que l'éditeur ne tournait que sous Windows, et c'était faux : l'éditeur tourne aussi sous Wine.
+Claude Code a écrit presque tout le code et mené les essais décrits ici. Il va vite, et il annonce ses erreurs sur le même ton que ses réussites. Il m'a par exemple assuré que FIFA Editor Tool ne tournait que sous Windows, et c'était faux : l'outil tourne aussi sous Wine.
 
 Mon travail consiste à choisir ce qui m'agace, à limiter le projet et à demander des preuves. Mon intervention la plus utile tient en trois mots : "are you sure??". Chaque étape écrit donc un fichier qu'on peut ouvrir et lire, et un résultat compte seulement s'il a tourné sur de vraies données.
 
 ## Où ça en est
 
-Au 4 novembre 2026, rien de tout cela n'a tourné dans le jeu. Le code relit et réécrit la vraie base à l'identique, et l'éditeur accepte le son et la 3D. Le test décisif reste à faire : une ligue factice dans une vraie carrière. La conversion des notes, qui doit créer des milliers de joueurs, n'est pas écrite non plus.
+Au 4 novembre 2026, rien de tout cela n'a tourné dans le jeu. Les premières vérifications sur les vrais fichiers passent, mais elles ne prouvent pas que le jeu acceptera une nouvelle ligue. Le test décisif reste à faire : une ligue factice dans une vraie carrière. La conversion des notes n'est pas écrite non plus, et les deux bonus restent des essais.
 
-Le mod reste un projet personnel, joué hors ligne, et je ne le publie pas.
+Le mod reste un projet personnel, pour une carrière hors ligne, et je ne le publie pas.
 
 ---
 
-Données cartographiques © les contributeurs d'OpenStreetMap, licence ODbL : https://www.openstreetmap.org/copyright. Les images sont des rendus Blender et ne contiennent aucun élément du jeu. Aucun club n'est associé à ce projet.
+Données cartographiques © les contributeurs d'OpenStreetMap, licence ODbL : https://www.openstreetmap.org/copyright. Couleurs des clubs : Wikipedia, CC BY-SA. Les images sont des rendus Blender et ne contiennent aucun élément du jeu. Aucun club n'est associé à ce projet.
